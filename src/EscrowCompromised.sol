@@ -1,23 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "forge-std/console.sol";
 
 /**
-* @title Escrow Contract
-* @notice This contract implements an escrow service for buyers and sellers.
+* @title Escrow Compromised Contract
+* @notice This contract is only used for testing purposes
 * @dev 
-* - This contract allows a buyer to deposit funds into escrow for a purchase, with an arbiter to complete the transaction.
-* - The funds are held until the arbiter marks the purchase as complete. 
-* - Allows for partial deposits and cancellation of the escrow if 24 hours have passed after the deposit.
-* - Uses a mapping to store the purchase details and a unique purchase ID is created using the buyer's address and the item ID.
-* - Does not allow for the same item to be in multiple escrows at the same time.
-* - Emits events for new escrows, deposits, completions, and cancellations.
+* - Allows reentrancy attacks by updating state after external calls
+* - Allows seller to pose as the arbiter and drain the escrow balanc
  */
 
 
-contract Escrow is ReentrancyGuard {
+contract EscrowCompromised {
 
     enum EscrowStatus { NotCreated, Created, PartlyDeposited, Deposited, Completed, Cancelled }
     
@@ -149,7 +144,7 @@ contract Escrow is ReentrancyGuard {
 
     }
 
-    function completePurchase(address buyer, uint itemId) external nonReentrant {
+    function completePurchase(address buyer, uint itemId) external {
 
         // re-create the unique purchase Id with the msg.sender as the buyer and the itemID:
         bytes32 purchaseId = getPurchaseId(buyer, itemId);
@@ -161,24 +156,22 @@ contract Escrow is ReentrancyGuard {
         require(msg.sender == purchase.arbiter, "Only arbiter can complete the purchase");
         require(purchase.status == EscrowStatus.Deposited,  "Escrow not in correct state");
         require(purchase.price == purchase.escrowBalance,  "Price and balance mismatch");
-        
-        uint256 transferAmount = purchase.escrowBalance; 
+
+        // transfer the funds to the seller:
+        (bool success, ) = purchase.seller.call{ value: purchase.escrowBalance }("");
+        require(success, "Transfer failed");
 
         // update state:
         purchase.status = EscrowStatus.Completed;
         purchase.escrowBalance = 0;
         purchase.completedAt = block.timestamp;
-
-        // transfer the funds to the seller:
-        (bool success, ) = purchase.seller.call{ value: transferAmount }("");
-        require(success, "Transfer failed");
         
         // emit the Complete event:
         emit Complete(buyer, itemId);
     }
 
     // refund deposit if escrow is not completed:
-    function cancel(uint itemId) external nonReentrant {
+    function cancel(uint itemId) external {
 
         // re-create the unique purchase Id with the msg.sender as the buyer and the itemID:
         bytes32 purchaseId = getPurchaseId(msg.sender, itemId);
