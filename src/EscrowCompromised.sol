@@ -7,7 +7,7 @@ import "forge-std/console.sol";
 * @title Escrow Compromised Contract
 * @notice This contract is only used for testing purposes
 * @dev 
-* - Allows reentrancy attacks by updating state after external calls
+* - Allows reentrancy attacks on cancel() and completePurchase() by updating state after external calls
 * - Allows seller to pose as the arbiter and drain the escrow balanc
  */
 
@@ -187,7 +187,14 @@ contract EscrowCompromised {
                 "Escrow not in correct state");  
         require(block.timestamp > purchase.depositedAt + 1 days, "Cancellation not allowed within 24 hours of deposit");  
 
-        uint256 refundAmount = purchase.escrowBalance;
+        // transfer the funds back to the buyer if a full or partial deposit was made:
+        if(purchase.escrowBalance > 0) {
+
+            // refund buyer
+            (bool success, ) = purchase.buyer.call{ value: purchase.escrowBalance }("");
+            require(success, "Transfer failed");
+
+        }
 
         // update state
         purchase.status = EscrowStatus.Cancelled;
@@ -195,14 +202,6 @@ contract EscrowCompromised {
         purchase.escrowBalance = 0;
         purchase.cancelledAt = block.timestamp;
 
-        // transfer the funds back to the buyer if a full or partial deposit was made:
-        if(refundAmount > 0) {
-
-            // refund buyer
-            (bool success, ) = purchase.buyer.call{ value: refundAmount }("");
-            require(success, "Transfer failed");
-
-        }
         
         // emit the Cancel event:
         emit Cancel(msg.sender, itemId);

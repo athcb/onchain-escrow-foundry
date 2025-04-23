@@ -84,6 +84,8 @@ contract Escrow is ReentrancyGuard {
         require(buyer != address(0), "Invalid buyer");
         require(seller != address(0), "Invalid seller");
         require(arbiter != address(0), "Invalid arbiter");
+        require(arbiter != seller, "Arbiter cannot be the seller");
+        require(arbiter != buyer, "Arbiter cannot be the buyer");
         require(price > 0, "Price must be greater than zero");
 
         // create the unique purchase identifier linking the buyer and itemId:

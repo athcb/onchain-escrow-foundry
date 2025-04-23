@@ -91,6 +91,16 @@ contract EscrowTest is Test {
         _createNewEscrow(buyer);
     }
 
+    function test_newEscrow_FailsWhenArbiterIsSeller() public {   
+        vm.expectRevert("Arbiter cannot be the seller");
+        escrow.newEscrow(buyer, seller, seller, itemId, price);
+    }
+
+    function test_newEscrow_FailsWhenArbiterIsBuyer() public {   
+        vm.expectRevert("Arbiter cannot be the buyer");
+        escrow.newEscrow(buyer, seller, buyer, itemId, price);
+    }
+
     function test_newEscrow_FailsWhenItemAlreadyInEscrow() public {
         escrow.newEscrow(address(this), seller, arbiter, itemId, price);
 
