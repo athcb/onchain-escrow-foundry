@@ -8,7 +8,7 @@ import "forge-std/console.sol";
 * @notice This contract is only used for testing purposes
 * @dev 
 * - Allows reentrancy attacks on cancel() and completePurchase() by updating state after external calls
-* - Allows seller to pose as the arbiter and drain the escrow balanc
+* - Allows seller to pose as the arbiter and drain the escrow balance
  */
 
 

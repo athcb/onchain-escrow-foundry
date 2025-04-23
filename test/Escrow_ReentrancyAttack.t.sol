@@ -52,6 +52,7 @@ contract Attacker {
 contract EscrowReentrancyAttackTest is Test {
 
     EscrowCompromised public escrow;
+    //Escrow public escrow;
     Attacker public attacker;
 
     address public buyer = makeAddr("buyer");
@@ -62,6 +63,7 @@ contract EscrowReentrancyAttackTest is Test {
 
     function setUp() public {
         escrow = new EscrowCompromised();
+        //escrow = new Escrow();
         attacker = new Attacker(payable(address(escrow)));
     }
 
